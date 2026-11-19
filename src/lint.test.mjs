@@ -335,18 +335,35 @@ describe('file kinds', () => {
   })
 })
 
+// How much slower the call gets when the input grows 4×: about 4 when linear, about 16 when
+// quadratic. A ratio, unlike a time budget, holds on slow CI runners. Each size takes the best of
+// three runs to damp noise, and a call that stays under 50 ms passes whatever the ratio.
+function growth(call, size) {
+  const best = n => {
+    let fastest = Number.POSITIVE_INFINITY
+    for (let i = 0; i < 3; i++) {
+      const start = performance.now()
+      call(n)
+      fastest = Math.min(fastest, performance.now() - start)
+    }
+    return fastest
+  }
+  const small = best(size)
+  const large = best(size * 4)
+  return large < 50 ? 1 : large / Math.max(small, 1)
+}
+
 describe('performance', () => {
   it('stays linear on long masked or minified text', () => {
-    const minified = `var a=1;${' '.repeat(200_000)}.Me diga;${'if(a<b&&c>d){x()}'.repeat(20_000)}`
-    const start = performance.now()
-    lintText(minified, {path: 'vendor.js'})
-    lintText(`Não há.${' '.repeat(200_000)}Me diga em Outubro.`)
-    expect(performance.now() - start).toBeLessThan(2000)
+    const minified = n => `var a=1;${' '.repeat(n)}.Me diga;${'if(a<b&&c>d){x()}'.repeat(n / 10)}`
+    expect(growth(n => lintText(minified(n), {path: 'vendor.js'}), 25_000)).toBeLessThan(10)
+    expect(
+      growth(n => lintText(`Não há.${' '.repeat(n)}Me diga em Outubro.`), 25_000),
+    ).toBeLessThan(10)
   })
 
   // Each case once made a regex quadratic on Node 22 (whose regex engine CI uses): a long run of
-  // one character after a prefix. 20 000 characters take milliseconds when linear and seconds
-  // when quadratic.
+  // one character after a prefix.
   it.each([
     ['a.md', '', 'a.'],
     ['a.md', '', '«'],
@@ -356,9 +373,9 @@ describe('performance', () => {
     ['a.html', '<?php ', '='],
     ['a.html', '<p title="', '('],
   ])('stays linear on %s after %j with a run of %j', (path, prefix, run) => {
-    const start = performance.now()
-    lintText(`${prefix}${run.repeat(20_000)}Me diga.`, {path})
-    expect(performance.now() - start).toBeLessThan(1000)
+    expect(growth(n => lintText(`${prefix}${run.repeat(n)}Me diga.`, {path}), 5_000)).toBeLessThan(
+      10,
+    )
   })
 })
 

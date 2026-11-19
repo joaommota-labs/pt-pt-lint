@@ -5,6 +5,8 @@ import {matchesGlob} from './config.mjs'
 import {SUPPORTED_EXTENSIONS} from './regions.mjs'
 
 const MAX_BYTES = 1_000_000
+// Per git call; well under the 32,767 characters of a Windows command line.
+const MAX_ARGS_LENGTH = 16_000
 const SKIP_DIRS = new Set(['node_modules', '.git'])
 export const DEFAULT_IGNORE = [
   '**/node_modules/**',
@@ -44,6 +46,28 @@ function walk(root, relative, out) {
 }
 
 /**
+ * Splits `paths` into groups that each fit one command line. `git ls-files` takes paths only as
+ * arguments, and Windows refuses a command line over 32,767 characters, which the staged files
+ * of a merge commit exceed. Always returns at least one group.
+ * @param {string[]} paths
+ */
+function chunkByLength(paths) {
+  const chunks = [[]]
+  let length = 0
+  for (const item of paths) {
+    // Three more per path: the separating space and the quotes Windows may add.
+    const cost = item.length + 3
+    if (length > 0 && length + cost > MAX_ARGS_LENGTH) {
+      chunks.push([])
+      length = 0
+    }
+    chunks.at(-1).push(item)
+    length += cost
+  }
+  return chunks
+}
+
+/**
  * Text files to check, relative to `root`: tracked files in a Git repository, otherwise every file.
  * @param {string} root
  * @param {string[]} paths limit to these files or folders
@@ -52,9 +76,19 @@ function walk(root, relative, out) {
  */
 export function listFiles(root, paths, config, options = {}) {
   const spawn = options.spawn ?? spawnSync
-  const git = spawn('git', ['ls-files', '-z', '--', ...paths], {cwd: root, encoding: 'utf8'})
   let files = []
-  if (git.status === 0) files = git.stdout.split('\0').filter(Boolean)
+  const tracked = new Set()
+  const inGit = chunkByLength(paths).every(chunk => {
+    const git = spawn('git', ['ls-files', '-z', '--', ...chunk], {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 256 * 1024 * 1024,
+    })
+    if (git.status !== 0) return false
+    for (const file of git.stdout.split('\0')) if (file) tracked.add(file)
+    return true
+  })
+  if (inGit) files = [...tracked]
   else for (const target of paths.length > 0 ? paths : ['']) walk(root, target, files)
   const configRoot = config.root ?? root
   return files.filter(file => {

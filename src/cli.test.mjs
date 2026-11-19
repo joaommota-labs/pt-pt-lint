@@ -97,6 +97,36 @@ describe('listFiles', () => {
     expect(listFiles(root, [], {ignore: []})).toEqual(['a.md'])
     expect(listFiles(root, ['a.md', 'missing.md'], {ignore: []})).toEqual(['a.md'])
   })
+
+  it('asks git in several calls when the paths would overflow one command line', () => {
+    const root = tree({'a.md': 'x', 'docs/b.md': 'x', 'untracked.md': 'x'})
+    spawnSync('git', ['init', '-q'], {cwd: root})
+    spawnSync('git', ['add', 'a.md', 'docs/b.md'], {cwd: root})
+    // A merge commit: thousands of staged paths. Windows refuses a command line over 32,767 characters.
+    const many = Array.from(
+      {length: 5000},
+      (_, i) => `apps/web/app/[locale]/portal/section-${i}/components/a file-${i}.md`,
+    )
+    const calls = []
+    const spawn = (command, args, options) => {
+      calls.push([command, ...args].join(' ').length)
+      return spawnSync(command, args, options)
+    }
+    const paths = ['a.md', ...many, 'docs', 'docs/b.md']
+    expect(listFiles(root, paths, {ignore: []}, {spawn})).toEqual(['a.md', 'docs/b.md'])
+    expect(calls.length).toBeGreaterThan(1)
+    for (const length of calls) expect(length).toBeLessThan(32_767)
+    expect(calls.reduce((sum, length) => sum + length, 0)).toBeGreaterThan(32_767)
+  })
+
+  it('walks the paths when git fails for any of the calls', () => {
+    const root = tree({'a.md': 'x', 'b.md': 'x'})
+    const many = Array.from({length: 2000}, (_, i) => `missing/a rather long folder name/${i}.md`)
+    let calls = 0
+    const spawn = () => ({status: calls++ === 0 ? 0 : 128, stdout: 'b.md\0'})
+    expect(listFiles(root, ['a.md', ...many], {ignore: []}, {spawn})).toEqual(['a.md'])
+    expect(calls).toBe(2)
+  })
 })
 
 describe('run', () => {

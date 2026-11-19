@@ -34,8 +34,10 @@ export function kindOf(filePath, text) {
   return KIND_BY_EXT.get(ext) ?? null
 }
 
+// The bodies exclude the opening bracket too, so a long run of «{» or «(» is scanned once rather
+// than once per bracket.
 const PLACEHOLDER =
-  /\$\{[^}]*\}|#\{[^}]*\}|\\\([^)]*\)|\{\{[^}]*\}\}|\{[\w.]+\}|%(?:\d+\$)?[sdif@]|\\u[0-9a-fA-F]{4}|\\[nrtbfv0'"\\`]/g
+  /\$\{[^{}]*\}|#\{[^{}]*\}|\\\([^()]*\)|\{\{[^{}]*\}\}|\{[\w.]+\}|%(?:\d+\$)?[sdif@]|\\u[0-9a-fA-F]{4}|\\[nrtbfv0'"\\`]/g
 const TEXT_ATTRIBUTES = new Set([
   'title',
   'alt',
@@ -102,8 +104,10 @@ function maskProse(mask) {
   const blanks = [
     /^(```|~~~)[^\n]*\n[\s\S]*?(^\1[^\n]*$|(?![\s\S]))/gm,
     /`[^`\n]+`/g,
-    /\bhttps?:\/\/\S+|\bwww\.\S+|[\w.+-]+@[\w-]+\.[\w.]+/g,
-    /«[^»\n]*»/g,
+    // An address only starts where a run of address characters starts, so a long run without
+    // «@» is scanned once.
+    /\bhttps?:\/\/\S+|\bwww\.\S+|(?<![\w.+-])[\w.+-]+@[\w-]+\.[\w.]+/g,
+    /«[^«»\n]*»/g,
     /\]\([^)\n]*\)/g,
     /<\/?[A-Za-z][^>\n]*>/g,
   ]
@@ -213,7 +217,13 @@ function scanTag(mask, start, end) {
   while (j < end) {
     const ch = text[j]
     if (ch === '=') {
-      attribute = /([\w:@.-]*)\s*$/.exec(text.slice(start, j))[1].toLowerCase()
+      // Read the name backwards from the «=»; a regex over the whole tag so far is quadratic
+      // on a long run of «=».
+      let nameEnd = j
+      while (nameEnd > start && /\s/.test(text[nameEnd - 1])) nameEnd--
+      let nameStart = nameEnd
+      while (nameStart > start && /[\w:@.-]/.test(text[nameStart - 1])) nameStart--
+      attribute = text.slice(nameStart, nameEnd).toLowerCase()
     } else if (ch === '"' || ch === "'") {
       const close = until(text, ch, j + 1, end)
       if (TEXT_ATTRIBUTES.has(attribute)) mask.keep(j + 1, close)
@@ -342,7 +352,7 @@ function scanLines(mask, kind) {
   for (const line of text.split('\n')) {
     const keepFrom = from => mask.keep(offset + from, offset + line.length)
     if (kind === 'yaml') {
-      const key = /^(\s*-?\s*)(?:"[^"]*"|'[^']*'|[^:#'"\s][^:#]*?):(\s|$)/.exec(line)
+      const key = /^([ \t]*(?:-[ \t]*)?)(?:"[^"]*"|'[^']*'|[^:#'"\s][^:#]*?):(\s|$)/.exec(line)
       if (key) keepFrom(key[0].length)
       else if (/^\s*(-\s|#)/.test(line)) keepFrom(line.search(/[-#]/) + 1)
       else keepFrom(0)

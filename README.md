@@ -52,10 +52,12 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: joaommotawork/packages/packages/pt-pt-lint@main
+      - uses: joaommotawork/packages/packages/pt-pt-lint@pt-pt-lint-v1
 ```
 
 Cada ocorrência aparece como anotação na linha: erro se for corrigível, aviso se for para rever.
+
+A tag `pt-pt-lint-v1` só avança quando corre o workflow **pt-pt-lint tag** (Actions → Run workflow), depois dos testes do pacote. Assim, uma alteração na `main` não chega a todos os repositórios ao mesmo tempo. Uma alteração incompatível publica-se numa tag `pt-pt-lint-v2` nova.
 
 ## Lefthook
 

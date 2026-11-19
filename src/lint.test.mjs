@@ -343,6 +343,23 @@ describe('performance', () => {
     lintText(`Não há.${' '.repeat(200_000)}Me diga em Outubro.`)
     expect(performance.now() - start).toBeLessThan(2000)
   })
+
+  // Each case once made a regex quadratic on Node 22 (whose regex engine CI uses): a long run of
+  // one character after a prefix. 20 000 characters take milliseconds when linear and seconds
+  // when quadratic.
+  it.each([
+    ['a.md', '', 'a.'],
+    ['a.md', '', '«'],
+    ['a.md', 'Não há.', ' '],
+    ['a.js', '//', '{'],
+    ['a.yml', '', ' '],
+    ['a.html', '<?php ', '='],
+    ['a.html', '<p title="', '('],
+  ])('stays linear on %s after %j with a run of %j', (path, prefix, run) => {
+    const start = performance.now()
+    lintText(`${prefix}${run.repeat(20_000)}Me diga.`, {path})
+    expect(performance.now() - start).toBeLessThan(1000)
+  })
 })
 
 describe('configuration', () => {

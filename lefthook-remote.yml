@@ -1,6 +1,6 @@
 # Configuração remota do Lefthook: os repositórios incluem-na com
 #   remotes:
-#     - git_url: git@github.com:joaommotawork/packages.git
+#     - git_url: git@github.com:joaommota-labs/packages.git
 #       ref: pt-pt-lint-v1
 #       configs: [packages/pt-pt-lint/lefthook-remote.yml]
 # O script está em .lefthook/pre-commit/pt-pt-lint.mjs na raiz deste repositório.

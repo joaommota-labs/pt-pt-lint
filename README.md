@@ -52,7 +52,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: joaommotawork/packages/packages/pt-pt-lint@pt-pt-lint-v1
+      - uses: joaommota-labs/packages/packages/pt-pt-lint@pt-pt-lint-v1
 ```
 
 Cada ocorrência aparece como anotação na linha: erro se for corrigível, aviso se for para rever.
@@ -65,7 +65,7 @@ Sem instalar o pacote: o Lefthook clona este repositório na tag `pt-pt-lint-v1`
 
 ```yaml
 remotes:
-  - git_url: git@github.com:joaommotawork/packages.git
+  - git_url: git@github.com:joaommota-labs/packages.git
     ref: pt-pt-lint-v1
     configs:
       - packages/pt-pt-lint/lefthook-remote.yml

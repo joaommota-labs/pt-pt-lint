@@ -1,0 +1,10 @@
+# Configuração remota do Lefthook, servida pelo mirror público joaommota-labs/pt-pt-lint:
+#   remotes:
+#     - git_url: https://github.com/joaommota-labs/pt-pt-lint.git
+#       ref: v1
+#       configs: [lefthook-remote.yml]
+# O script está em .lefthook/pre-commit/pt-pt-lint.mjs, junto a este ficheiro.
+pre-commit:
+  scripts:
+    "pt-pt-lint.mjs":
+      runner: node

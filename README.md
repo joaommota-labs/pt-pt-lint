@@ -52,12 +52,26 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: joaommotawork/packages/packages/pt-pt-lint@main
+      - uses: joaommota-labs/pt-pt-lint@v1
 ```
 
 Cada ocorrência aparece como anotação na linha: erro se for corrigível, aviso se for para rever.
 
+A Action vem do mirror público [joaommota-labs/pt-pt-lint](https://github.com/joaommota-labs/pt-pt-lint), por isso serve repositórios públicos e privados. O workflow **pt-pt-lint tag** (Actions → Run workflow) corre os testes do pacote e copia-o para o mirror. Depois move a tag `v1`. Assim, uma alteração na `main` não chega a todos os repositórios ao mesmo tempo. Uma alteração incompatível publica-se numa tag `v2` nova.
+
 ## Lefthook
+
+Sem instalar o pacote: o Lefthook clona o mirror na tag `v1` e corre `.lefthook/pre-commit/pt-pt-lint.mjs`. O script corrige os ficheiros em stage, volta a pô-los em stage e falha se ficar algo corrigível por corrigir.
+
+```yaml
+remotes:
+  - git_url: https://github.com/joaommota-labs/pt-pt-lint.git
+    ref: v1
+    configs:
+      - lefthook-remote.yml
+```
+
+Com o pacote instalado:
 
 ```yaml
 pre-commit:

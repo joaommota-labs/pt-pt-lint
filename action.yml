@@ -1,0 +1,15 @@
+name: pt-PT lint
+description: Verifica português europeu (AO90) e anota o vocabulário e a grafia do Brasil ou anteriores ao Acordo.
+inputs:
+  args:
+    description: Argumentos para o pt-pt-lint (por exemplo --strict ou caminhos).
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - shell: bash
+      run: node "$GITHUB_ACTION_PATH/bin/pt-pt-lint.mjs" --format github ${{ inputs.args }}

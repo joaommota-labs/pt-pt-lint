@@ -1,0 +1,41 @@
+{
+  "name": "@joaommotawork/pt-pt-lint",
+  "version": "0.0.0",
+  "description": "Verifica e corrige português do Brasil e grafia anterior ao AO90 em texto pt-PT: CLI, hooks do Claude Code e GitHub Action.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "pt-pt-lint": "./bin/pt-pt-lint.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "!src/**/*.test.mjs",
+    "!src/test-helpers.mjs",
+    "action.yml"
+  ],
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaommotawork/packages.git",
+    "directory": "packages/pt-pt-lint"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "package:check": "publint --strict"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.12",
+    "publint": "^0.3.12",
+    "vitest": "^4.1.12"
+  }
+}

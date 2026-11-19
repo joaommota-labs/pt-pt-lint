@@ -1,0 +1,11 @@
+# Configuração remota do Lefthook: os repositórios incluem-na com
+#   remotes:
+#     - git_url: git@github.com:joaommotawork/packages.git
+#       ref: pt-pt-lint-v1
+#       configs: [packages/pt-pt-lint/lefthook-remote.yml]
+# O Lefthook clona o repositório para <git-path info>/lefthook-remotes/packages-pt-pt-lint-v1.
+pre-commit:
+  commands:
+    pt-pt:
+      run: node "$(git rev-parse --git-path info)/lefthook-remotes/packages-pt-pt-lint-v1/packages/pt-pt-lint/bin/pt-pt-lint.mjs" --fix {staged_files}
+      stage_fixed: true

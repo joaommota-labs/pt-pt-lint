@@ -61,6 +61,18 @@ A tag `pt-pt-lint-v1` só avança quando corre o workflow **pt-pt-lint tag** (Ac
 
 ## Lefthook
 
+Sem instalar o pacote: o Lefthook clona este repositório na tag `pt-pt-lint-v1` e corre `.lefthook/pre-commit/pt-pt-lint.mjs`. O script corrige os ficheiros em stage, volta a pô-los em stage e falha se ficar algo corrigível por corrigir.
+
+```yaml
+remotes:
+  - git_url: git@github.com:joaommotawork/packages.git
+    ref: pt-pt-lint-v1
+    configs:
+      - packages/pt-pt-lint/lefthook-remote.yml
+```
+
+Com o pacote instalado:
+
 ```yaml
 pre-commit:
   commands:
